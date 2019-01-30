@@ -2,11 +2,13 @@ import os
 import random
 
 
+# creates empty board
 def grid_maker(h, w):
     grid = [[" " for i in range(w)] for i in range(h)]
     return grid
 
 
+# prints board
 def print_board(grid):
     print("   | A | B | C | D | E | F | G | H | I | J |")
     for i in range(0, 10):
@@ -24,12 +26,14 @@ def print_board(grid):
     print("-" * 44)
 
 
+# change board at 'A1' type coordinates by value
 def change_board(grid, coordinates, value):
     # numeral alphabetical
     x, y = translate_alphabetical(coordinates)
     grid[x][y] = value
 
 
+# changes 'A1' -> 0 0
 def translate_alphabetical(string):
     switcher = {
         "A": 0,
@@ -48,13 +52,15 @@ def translate_alphabetical(string):
     return x, y
 
 
-def check_constraints(number):  # checks if part of attributes is between 0 and 9
+# checks if part of attributes is between 0 and 9
+def check_constraints(number):  
     if 0 <= number <= 9:
         return True
     return False
 
 
-def ship_length(shipType):  # returns length of ship of certain type
+# returns length of ship of certain type
+def ship_length(shipType):  
     switcher = {
         "Destroyer": 2,
         "Submarine": 3,
@@ -103,7 +109,7 @@ def insert_ship(grid, firstX, firstY, secondX, secondY):
         return False, 'Your ship cannot be placed here'
 
 
-# puts ship of type at coordinates given by a player
+# first check of coordinates given by a player, leads to ship placement
 def put_ship(grid, shipType, firstCoordinate, secondCoordinate):
     try:
         firstX, firstY = translate_alphabetical(firstCoordinate)
@@ -129,6 +135,7 @@ def put_ship(grid, shipType, firstCoordinate, secondCoordinate):
     return False, "Can't place ships diagonally"
 
 
+#asks for coordinates while placement phase
 def player_placement_turn(ship_list):
     errorString = ' '
     stop = ''
@@ -161,6 +168,7 @@ def player_placement_turn(ship_list):
     return grid
 
 
+# places ships in custom places
 def generate_ship(grid):
     # Carrier
     insert_ship(grid, 0, 0, 0, 4)
@@ -194,6 +202,7 @@ def placement_phase(player, ship_list):
     return player_grid, shooting_grid
 
 
+# places mines in random places on board
 def generate_mines(mines, grid):
     while mines != 0:
         x = random.randrange(0, 10)
@@ -214,6 +223,7 @@ def generate_mines(mines, grid):
                 grid[x][y] = 'M'
 
 
+# mines functionality, what happens when mine is triggered
 def mine_explode(x, y, shooting_grid, enemy_grid, enemy_life):
     x_table = [x, x - 1, x + 1, x, x]
     y_table = [y, y, y, y - 1, y + 1]
@@ -233,8 +243,8 @@ def mine_explode(x, y, shooting_grid, enemy_grid, enemy_life):
     return enemy_life
 
 
-def player_comp(boop, shooting_grid, enemy_grid, enemy_life):
-    x, y = translate_alphabetical(boop)
+def player_shot(coordinates, shooting_grid, enemy_grid, enemy_life):
+    x, y = translate_alphabetical(coordinates)
     if(str(enemy_grid[x][y]) == '#'):
         shooting_grid[x][y] = 'x'
         enemy_grid[x][y] = 'x'
@@ -258,8 +268,8 @@ def player_turn(ammo_number, shooting_grid, enemy_grid, enemy_life):
         while stop != 'Y':
             try:
                 print(errorString)
-                boop = input("where should I shoot? ")
-                x, y = translate_alphabetical(boop)
+                coordinates = input("where should I shoot? ")
+                x, y = translate_alphabetical(coordinates)
                 if check_constraints(x) and check_constraints(y):
                     errorString = ' '
                     stop = 'Y'
@@ -267,7 +277,7 @@ def player_turn(ammo_number, shooting_grid, enemy_grid, enemy_life):
                     errorString = 'Please stay within the board'
             except ValueError:
                 errorString = 'Problem with coordinates, please use correct format (i.e. A4)'
-        enemy_life = player_comp(boop, shooting_grid, enemy_grid, enemy_life)
+        enemy_life = player_shot(coordinates, shooting_grid, enemy_grid, enemy_life)
         print_board(shooting_grid)
         if enemy_life == 0:
             return 0
