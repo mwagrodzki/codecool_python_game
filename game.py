@@ -1,4 +1,5 @@
-import os, random
+import os
+import random
 
 
 def grid_maker(h, w):
@@ -205,12 +206,12 @@ def placement_phase(player):
 
 def generate_mines(mines, grid):
     while mines != 0:
-        x = random.randrange(0,10)
-        y = random.randrange(0,10)
-        
+        x = random.randrange(0, 10)
+        y = random.randrange(0, 10)
+
         if grid[x][y] == ' ':
-            x_table = [x, x-1, x+1, x, x]
-            y_table = [y, y, y, y-1, y+1]
+            x_table = [x, x - 1, x + 1, x, x]
+            y_table = [y, y, y, y - 1, y + 1]
             coordinates = set(zip(x_table, y_table))
 
             stop = 0
@@ -219,14 +220,14 @@ def generate_mines(mines, grid):
                     if(str(grid[a][b]) == 'M'):
                         stop = 1
             if stop == 0:
-                mines -=1
+                mines -= 1
                 grid[x][y] = 'M'
-            
+
 
 def mine_explode(x, y, shooting_grid, enemy_grid, enemy_life):
-    x_table = [x, x-1, x+1, x, x]
-    y_table = [y, y, y, y-1, y+1]
-    
+    x_table = [x, x - 1, x + 1, x, x]
+    y_table = [y, y, y, y - 1, y + 1]
+
     coordinates = set(zip(x_table, y_table))
 
     for a, b in coordinates:
@@ -250,6 +251,7 @@ def player_comp(boop, shooting_grid, enemy_grid, enemy_life):
         enemy_life -= 1
     if(str(enemy_grid[x][y]) == ' '):
         shooting_grid[x][y] = 'o'
+        enemy_grid[x][y] = 'o'
     if(str(enemy_grid[x][y]) == 'M'):
         shooting_grid[x][y] = 'm'
         enemy_grid[x][y] = 'm'
@@ -283,20 +285,57 @@ def player_turn(ammo_number, shooting_grid, enemy_grid, enemy_life):
     return enemy_life
 
 
+def pirate_shot(grid, player_life):
+    shot = 1
+    while shot != 0:
+        x = random.randrange(0, 10)
+        y = random.randrange(0, 10)
+
+        if grid[x][y] not in ['x', 'o']:
+            if(grid[x][y] == '#'):
+                grid[x][y] = 'x'
+                player_life -= 1
+            if(grid[x][y] == ' '):
+                grid[x][y] = 'o'
+            shot -= 1
+    return player_life
+
+
 def main():
     player1_life = 30
     player2_life = 30
-    ammunition = 1
+    ammunition = 3
+    mode_mines = False
+    mode_pirates = False
 
     print("  \n  \n  \n  ")
-    print("Legend:\n#-your ship\no-missed shot\nx-hit shot and your ship hit\nships have to be played at least 1 tile further\nyou have 3 shots every turn")
+    print("Legend:\n#-your ship\no-missed shot\nx-hit shot and your ship hit\nM-active mine\nm-destroyed mine\nships have to be played at least 1 tile further\nyou have 3 shots every turn")
     print("  \n  \n  \n  ")
 
-    player1, player1_shooting = placement_phase(1)
-    player2, player2_shooting = placement_phase(2)
+    pv_mode = ''
+    while pv_mode == '':
+        pv_mode = input("Would you like to play vs player or ai? ")
+        if pv_mode not in ['player', 'ai']:
+            pv_mode = ''
 
-    generate_mines(10, player1)
-    generate_mines(10, player2)
+    if pv_mode == 'player':
+        game_mode = ''
+        while game_mode == '':
+            game_mode = input("What mode (normal/mines/pirates)? ")
+            if game_mode not in ['normal', 'mines', 'pirates']:
+                game_mode = ''
+            elif game_mode == 'mines':
+                mode_mines = True
+            elif game_mode == 'pirates':
+                mode_pirates = True
+        player1, player1_shooting = placement_phase(1)
+        player2, player2_shooting = placement_phase(2)
+    elif pv_mode == 'ai':
+        player1, player1_shooting = placement_phase(1)
+
+    if mode_mines:
+        generate_mines(10, player1)
+        generate_mines(10, player2)
 
     turn = 0
     while (player1_life > 0 and player2_life > 0):
@@ -310,12 +349,19 @@ def main():
             input("Those are your ships \nPress enter key to continue...")
             player2_life = player_turn(
                 ammunition, player1_shooting, player2, player2_life)
+            if mode_pirates:
+                pirate_shot(player1, player1_life)
         else:
-            input("Turn of player 2 \nPress enter key to continue...")
-            print_board(player2)
-            input("Those are your ships \nPress enter key to continue...")
-            player1_life = player_turn(
-                ammunition, player2_shooting, player1, player1_life)
+            if pv_mode == 'player':
+                input("Turn of player 2 \nPress enter key to continue...")
+                print_board(player2)
+                input("Those are your ships \nPress enter key to continue...")
+                player1_life = player_turn(
+                    ammunition, player2_shooting, player1, player1_life)
+                if mode_pirates:
+                    pirate_shot(player2, player2_life)
+            elif pv_mode == 'ai':
+                pass
         turn += 1
 
     os.system('clear')
@@ -329,3 +375,4 @@ main()
 
 
 # https://docs.google.com/document/d/1VBnJelTuwHtcQZPzLOdoqOp3PQxQG-3mAzb_ZNXK6n0/edit
+# http://www.ultrabattleship.com/variations.php
