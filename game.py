@@ -73,7 +73,7 @@ def check_area(grid, firstX, firstY, secondX, secondY):
 
     for i in range(firstX - 1, secondX + 2):
         for j in range(firstY - 1, secondY + 2):
-            if i >= 0 and i <= 9 and j >= 0 and j <= 9:
+            if check_constraints(i) and check_constraints(j):
                 if grid[i][j] == '#':
                     return False
     return True
@@ -129,22 +129,12 @@ def put_ship(grid, shipType, firstCoordinate, secondCoordinate):
     return False, "Can't place ships diagonally"
 
 
-def player_placement_turn():
+def player_placement_turn(ship_list):
     errorString = ' '
     stop = ''
+    ships = ship_list[:]
     while stop != 'Y':
         grid = grid_maker(10, 10)
-        ships = [
-            'Carrier',
-            'Battleship',
-            'Battleship',
-            'Submarine',
-            'Submarine',
-            'Submarine',
-            'Destroyer',
-            'Destroyer',
-            'Destroyer',
-            'Destroyer']
         while 0 != len(ships):
             os.system('clear')
             print_board(grid)
@@ -157,7 +147,7 @@ def player_placement_turn():
             if first == 'reset':
                 break
             second = input(
-                "Enter first coordinates of the %s (length= %s): " %
+                "Enter second coordinates of the %s (length= %s): " %
                 (ships[0], ship_length(
                     ships[0])))
             check, errorString = put_ship(grid, ships[0], first, second)
@@ -189,7 +179,7 @@ def generate_ship(grid):
 
 
 # skip generates ships in predefined places
-def placement_phase(player):
+def placement_phase(player, ship_list):
     cheat = input(
         "Player %d placing ships \nPress enter to continue..." %
         player)
@@ -197,7 +187,7 @@ def placement_phase(player):
         player_grid = grid_maker(10, 10)
         generate_ship(player_grid)
     else:
-        player_grid = player_placement_turn()
+        player_grid = player_placement_turn(ship_list)
     shooting_grid = grid_maker(10, 10)
     input("You have placed your ships \nPress enter to continue...")
     os.system('clear')
@@ -301,12 +291,62 @@ def pirate_shot(grid, player_life):
     return player_life
 
 
+def ai_placement_vM(ship_list):
+    grid = grid_maker(10, 10)
+    ships = ship_list[:]
+    counter = 0
+    while len(ships) > 0:
+        x = random.randrange(0, 10)
+        y = random.randrange(0, 10)
+        direction = ['left', 'right', 'up', 'down']
+        while len(direction) > 0:
+            choice = random.choice(direction)
+            a, b = x, y
+            if choice == 'left':
+                a -= ship_length(ships[0]) - 1
+            elif choice == 'right':
+                a += ship_length(ships[0]) - 1
+            elif choice == 'up':
+                b -= ship_length(ships[0]) - 1
+            elif choice == 'down':
+                b += ship_length(ships[0]) - 1
+            if check_constraints(a) and check_constraints(b):
+                check = check_area(grid, x, y, a, b)
+            else:
+                check = False
+            if not check:
+                direction.remove(choice)
+            else:
+                insert_ship(grid, x, y, a, b)
+                del ships[0]
+                counter = 0
+                break
+        if len(direction) == 0:
+            counter += 1
+        if counter == 20:
+            grid = grid_maker(10, 10)
+            ships = ship_list[:]
+            counter = 0
+    return grid
+
+
 def main():
     player1_life = 30
     player2_life = 30
     ammunition = 3
-    mode_mines = False
     mode_pirates = False
+
+    ships = [
+        'Carrier',
+        'Battleship',
+        'Battleship',
+        'Submarine',
+        'Submarine',
+        'Submarine',
+        'Destroyer',
+        'Destroyer',
+        'Destroyer',
+        'Destroyer']
 
     print("  \n  \n  \n  ")
     print("Legend:\n#-your ship\no-missed shot\nx-hit shot and your ship hit\nM-active mine\nm-destroyed mine\nships have to be played at least 1 tile further\nyou have 3 shots every turn")
@@ -325,17 +365,15 @@ def main():
             if game_mode not in ['normal', 'mines', 'pirates']:
                 game_mode = ''
             elif game_mode == 'mines':
-                mode_mines = True
+                generate_mines(10, player1)
+                generate_mines(10, player2)
             elif game_mode == 'pirates':
                 mode_pirates = True
-        player1, player1_shooting = placement_phase(1)
-        player2, player2_shooting = placement_phase(2)
+        player1, player1_shooting = placement_phase(1, ships)
+        player2, player2_shooting = placement_phase(2, ships)
     elif pv_mode == 'ai':
-        player1, player1_shooting = placement_phase(1)
-
-    if mode_mines:
-        generate_mines(10, player1)
-        generate_mines(10, player2)
+        player1, player1_shooting = placement_phase(1, ships)
+        player2 = ai_placement_vM(ships)
 
     turn = 0
     while (player1_life > 0 and player2_life > 0):
@@ -372,7 +410,6 @@ def main():
 
 
 main()
-
 
 # https://docs.google.com/document/d/1VBnJelTuwHtcQZPzLOdoqOp3PQxQG-3mAzb_ZNXK6n0/edit
 # http://www.ultrabattleship.com/variations.php
