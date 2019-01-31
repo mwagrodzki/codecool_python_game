@@ -1,5 +1,6 @@
 import os
 import random
+import time
 
 
 # creates empty board
@@ -8,8 +9,33 @@ def grid_maker(h, w):
     return grid
 
 
+# colors field on a board
+def paint(field, shot):
+    red = '\33[91m'
+    green = '\33[32m'
+    yellow = '\33[33m'
+    hitG = '\33[102m'
+    hitR = '\33[101m'
+    endc = '\033[0m'
+
+    if field == '#':
+        return yellow + ' ' + field + ' ' + endc
+    elif field == 'x':
+        if shot:
+            return hitR + ' ' + field + ' ' + endc
+        else:
+            return red + ' ' + field + ' ' + endc
+    elif field == 'o':
+        if shot:
+            return hitG + ' ' + field + ' ' + endc
+        else:
+            return green + ' ' + field + ' ' + endc
+
+    return ' ' + field + ' '
+
+
 # prints board
-def print_board(grid):
+def print_board(grid, x=-1, y=-1):
     print("   | A | B | C | D | E | F | G | H | I | J |")
     for i in range(0, 10):
         print("-" * 44)
@@ -19,9 +45,15 @@ def print_board(grid):
             print((i + 1), end="  ")
         for j in range(0, 10):
             if j == 9:
-                print('| ' + grid[i][j], end=" |")
+                if i == x and j == y:
+                    print('|' + paint(grid[i][j], True), end="|")
+                else:
+                    print('|' + paint(grid[i][j], False), end="|")
             else:
-                print('| ' + grid[i][j], end=" ")
+                if i == x and j == y:
+                    print('|' + paint(grid[i][j], True), end="")
+                else:
+                    print('|' + paint(grid[i][j], False), end="")
         print()
     print("-" * 44)
 
@@ -53,14 +85,14 @@ def translate_alphabetical(string):
 
 
 # checks if part of attributes is between 0 and 9
-def check_constraints(number):  
+def check_constraints(number):
     if 0 <= number <= 9:
         return True
     return False
 
 
 # returns length of ship of certain type
-def ship_length(shipType):  
+def ship_length(shipType):
     switcher = {
         "Destroyer": 2,
         "Submarine": 3,
@@ -135,7 +167,7 @@ def put_ship(grid, shipType, firstCoordinate, secondCoordinate):
     return False, "Can't place ships diagonally"
 
 
-#asks for coordinates while placement phase
+# asks for coordinates while placement phase
 def player_placement_turn(ship_list):
     errorString = ' '
     stop = ''
@@ -185,6 +217,8 @@ def generate_ship(grid):
     insert_ship(grid, 6, 9, 6, 8)
     insert_ship(grid, 8, 9, 8, 8)
 
+    return grid
+
 
 # skip generates ships in predefined places
 def placement_phase(player, ship_list):
@@ -193,7 +227,7 @@ def placement_phase(player, ship_list):
         player)
     if cheat == 'skip':
         player_grid = grid_maker(10, 10)
-        generate_ship(player_grid)
+        player_grid = ai_placement_vM(ship_list)
     else:
         player_grid = player_placement_turn(ship_list)
     shooting_grid = grid_maker(10, 10)
@@ -269,6 +303,8 @@ def player_turn(ammo_number, shooting_grid, enemy_grid, enemy_life):
             try:
                 print(errorString)
                 coordinates = input("where should I shoot? ")
+                if coordinates == 'cheat':
+                    return 0
                 x, y = translate_alphabetical(coordinates)
                 if check_constraints(x) and check_constraints(y):
                     errorString = ' '
@@ -277,7 +313,11 @@ def player_turn(ammo_number, shooting_grid, enemy_grid, enemy_life):
                     errorString = 'Please stay within the board'
             except ValueError:
                 errorString = 'Problem with coordinates, please use correct format (i.e. A4)'
-        enemy_life = player_shot(coordinates, shooting_grid, enemy_grid, enemy_life)
+        enemy_life = player_shot(
+            coordinates,
+            shooting_grid,
+            enemy_grid,
+            enemy_life)
         print_board(shooting_grid)
         if enemy_life == 0:
             return 0
@@ -340,12 +380,58 @@ def ai_placement_vM(ship_list):
     return grid
 
 
+def ai_eliminate_area(possibilities, grid, x, y):
+    for k in [(x - 1, y - 1), (x - 1, y + 1), (x + 1, y - 1), (x + 1, y + 1)]:
+        i, j = k
+        if check_constraints(i) and check_constraints(j):
+            grid[i][j] = 'o'
+            if k in possibilities:
+                possibilities.remove(k)
+    for k in [(x, y + 1), (x, y - 1), (x + 1, y), (x - 1, y)]:
+        i, j = k
+        if check_constraints(i) and check_constraints(j):
+            if grid[i][j] == ' ':
+                possibilities.append((i, j))
+
+    return possibilities, grid
+
+
+def ai_shoot_vM(possible_shots, ammo_number,
+                shooting_grid, enemy_grid, enemy_life):
+    while ammo_number != 0:
+        x = random.randrange(0, 10)
+        y = random.randrange(0, 10)
+        if len(possible_shots) > 0:
+            x = possible_shots[0][0]
+            y = possible_shots[0][1]
+            del possible_shots[0]
+
+        if enemy_grid[x][y] not in ['x', 'o']:
+            if(enemy_grid[x][y] == '#'):
+                enemy_grid[x][y] = 'x'
+                shooting_grid[x][y] = 'x'
+                enemy_life -= 1
+                possible_shots, shooting_grid = ai_eliminate_area(
+                    possible_shots, shooting_grid, x, y)
+            if(enemy_grid[x][y] == ' '):
+                enemy_grid[x][y] = 'o'
+                shooting_grid[x][y] = 'o'
+            ammo_number -= 1
+            os.system('clear')
+            print("Remaining bullets: %d" % (ammo_number + 1))
+            print_board(enemy_grid, x, y)
+            time.sleep(1)
+
+    return enemy_life
+
+
 def main():
     player1_life = 30
     player2_life = 30
     ammunition = 3
     mode_pirates = False
 
+    possible_shots = []
     ships = [
         'Carrier',
         'Battleship',
@@ -384,6 +470,7 @@ def main():
     elif pv_mode == 'ai':
         player1, player1_shooting = placement_phase(1, ships)
         player2 = ai_placement_vM(ships)
+        player2_shooting = grid_maker(10, 10)
 
     turn = 0
     while (player1_life > 0 and player2_life > 0):
@@ -409,14 +496,26 @@ def main():
                 if mode_pirates:
                     pirate_shot(player2, player2_life)
             elif pv_mode == 'ai':
-                pass
+                print("Turn of player 2")
+                player1_life = ai_shoot_vM(
+                    possible_shots,
+                    ammunition,
+                    player2_shooting,
+                    player1,
+                    player1_life)
         turn += 1
 
     os.system('clear')
     if(int(player1_life) == 0):
-        print("VICTORY ROYALE \nplayer 2 win")
+        print("VICTORY ROYALE \nplayer 2 win\n")
+        print_board(player1)
     else:
-        print("VICTORY ROYALE \nplayer 1 win")
+        for i in range(10):
+            for j in range(10):
+                if player2[i][j] == '#':
+                    player2[i][j] = 'x'
+        print("VICTORY ROYALE \nplayer 1 win\n")
+        print_board(player2)
 
 
 main()
