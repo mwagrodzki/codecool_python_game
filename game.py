@@ -33,9 +33,9 @@ def paint(field, shot):
         else:
             return green + ' ' + field + ' ' + endc
     elif field == 'M':
-            return blue + ' ' + field + ' ' + endc
+        return blue + ' ' + field + ' ' + endc
     elif field == 'm':
-            return violet + ' ' + field + ' ' + endc
+        return violet + ' ' + field + ' ' + endc
 
     return ' ' + field + ' '
 
@@ -331,6 +331,7 @@ def player_turn(ammo_number, shooting_grid, enemy_grid, enemy_life):
     return enemy_life
 
 
+# pirate mode mechanic
 def pirate_shot(grid, player_life):
     shot = 1
     while shot != 0:
@@ -347,6 +348,7 @@ def pirate_shot(grid, player_life):
     return player_life
 
 
+# random ship placement
 def ai_placement_vM(ship_list):
     grid = grid_maker(10, 10)
     ships = ship_list[:]
@@ -386,7 +388,9 @@ def ai_placement_vM(ship_list):
     return grid
 
 
-def ai_eliminate_area(possibilities, grid, x, y):
+# ai checks area, remembers possible other coordinates of the hit ship and
+# marks fields where ship cannot be
+def ai_area_check(possibilities, grid, x, y):
     for k in [(x - 1, y - 1), (x - 1, y + 1), (x + 1, y - 1), (x + 1, y + 1)]:
         i, j = k
         if check_constraints(i) and check_constraints(j):
@@ -417,7 +421,7 @@ def ai_shoot_vM(possible_shots, ammo_number,
                 enemy_grid[x][y] = 'x'
                 shooting_grid[x][y] = 'x'
                 enemy_life -= 1
-                possible_shots, shooting_grid = ai_eliminate_area(
+                possible_shots, shooting_grid = ai_area_check(
                     possible_shots, shooting_grid, x, y)
             if(enemy_grid[x][y] == ' '):
                 enemy_grid[x][y] = 'o'
@@ -529,3 +533,4 @@ main()
 
 # https://docs.google.com/document/d/1VBnJelTuwHtcQZPzLOdoqOp3PQxQG-3mAzb_ZNXK6n0/edit
 # http://www.ultrabattleship.com/variations.php
+# https://stackoverflow.com/questions/287871/print-in-terminal-with-colors
