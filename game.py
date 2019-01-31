@@ -14,6 +14,8 @@ def paint(field, shot):
     red = '\33[91m'
     green = '\33[32m'
     yellow = '\33[33m'
+    blue = '\33[34m'
+    violet = '\33[35m'
     hitG = '\33[102m'
     hitR = '\33[101m'
     endc = '\033[0m'
@@ -30,6 +32,10 @@ def paint(field, shot):
             return hitG + ' ' + field + ' ' + endc
         else:
             return green + ' ' + field + ' ' + endc
+    elif field == 'M':
+            return blue + ' ' + field + ' ' + endc
+    elif field == 'm':
+            return violet + ' ' + field + ' ' + endc
 
     return ' ' + field + ' '
 
@@ -429,6 +435,7 @@ def main():
     player1_life = 30
     player2_life = 30
     ammunition = 3
+    mines_number = 5
     mode_pirates = False
 
     possible_shots = []
@@ -460,13 +467,13 @@ def main():
             game_mode = input("What mode (normal/mines/pirates)? ")
             if game_mode not in ['normal', 'mines', 'pirates']:
                 game_mode = ''
-            elif game_mode == 'mines':
-                generate_mines(10, player1)
-                generate_mines(10, player2)
-            elif game_mode == 'pirates':
-                mode_pirates = True
         player1, player1_shooting = placement_phase(1, ships)
         player2, player2_shooting = placement_phase(2, ships)
+        if game_mode == 'mines':
+            generate_mines(mines_number, player1)
+            generate_mines(mines_number, player2)
+        elif game_mode == 'pirates':
+            mode_pirates = True
     elif pv_mode == 'ai':
         player1, player1_shooting = placement_phase(1, ships)
         player2 = ai_placement_vM(ships)
